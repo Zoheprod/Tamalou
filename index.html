@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamalou - Jeu de cartes</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #d9534f;
+            margin-bottom: 1rem;
+        }
+        .section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f7f7f7;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .section-header {
+            margin: 0;
+            color: #d9534f;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #d9534f;
+            padding-bottom: 0.5rem;
+        }
+        input[type="text"], input[type="number"], select {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: calc(100% - 1.5rem);
+            margin-bottom: 1rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            background: #d9534f;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem 0;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background: #c9302c;
+        }
+        .remove-btn, .clear-scores-btn, .clear-ranking-btn, .new-game-btn {
+            background: #f0ad4e;
+        }
+        .remove-btn:hover, .clear-scores-btn:hover, .clear-ranking-btn:hover, .new-game-btn:hover {
+            background: #ec971f;
+        }
+        .player-list, .ranking-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .player-list li, .ranking-list li {
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        .player-list li:last-child, .ranking-list li:last-child {
+            border-bottom: none;
+        }
+        .points-input {
+            width: 80px;
+            margin-left: 10px;
+        }
+        .tamalou-section, .points-section {
+            margin-bottom: 1rem;
+        }
+        .notification {
+            margin: 1rem 0;
+            padding: 0.75rem;
+            border-radius: 6px;
+            color: #ffffff;
+            background-color: #d9534f;
+            display: none;
+        }
+        .notification.success {
+            background-color: #5bc0de;
+        }
+        .notification.error {
+            background-color: #d9534f;
+        }
+        .round-info {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f7f7f7;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .round-info h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tamalou</h1>
+
+        <div class="round-info">
+            <h2>Manche : <span id="roundNumber">1</span></h2>
+            <button class="new-game-btn" onclick="newGame()">Nouvelle Partie</button>
+        </div>
+
+        <div id="notification" class="notification"></div>
+
+        <div class="section">
+            <h2 class="section-header">Ajouter des joueurs</h2>
+            <input type="text" id="playerName" placeholder="Nom du joueur">
+            <button onclick="addPlayer()">Valider le joueur</button>
+        </div>
+
+        <div class="section">
+            <h3 class="section-header">Joueurs :</h3>
+            <ul id="playerList" class="player-list"></ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-header">Définir la manche</h2>
+            <h3>Définir le Tamalou pour cette manche :</h3>
+            <div id="tamalouSection" class="tamalou-section"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-header">Saisir les points pour cette manche</h2>
+            <div id="pointsSection" class="points-section"></div>
+            <button onclick="processManche()">Calculer les scores</button>
+            <button class="clear-scores-btn" onclick="clearScores()">Réinitialiser les scores de la manche</button>
+        </div>
+
+        <div class="section">
+            <h2 class="section-header">Classement :</h2>
+            <ul id="rankingList" class="ranking-list"></ul>
+            <button class="clear-ranking-btn" onclick="clearRanking()">Réinitialiser le classement</button>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let tamalouIndex = -1;
+        let roundNumber = 1;
+
+        function addPlayer() {
+            const playerNameInput = document.getElementById('playerName');
+            const playerName = playerNameInput.value.trim();
+
+            if (playerName === '') {
+                showNotification("Veuillez entrer un nom de joueur.", "error");
+                return;
+            }
+
+            if (players.some(player => player.name === playerName)) {
+                showNotification("Ce joueur existe déjà.", "error");
+                return;
+            }
+
+            players.push({ name: playerName, points: 0, roundPoints: 0 });
+            playerNameInput.value = '';
+            updatePlayerList();
+            updateTamalouSection();
+            updatePointsSection();
+            updateRanking();
+        }
+
+        function updatePlayerList() {
+            const playerList = document.getElementById('playerList');
+            playerList.innerHTML = '';
+
+            players.forEach((player, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ${player.name}
+                    <button class="remove-btn" onclick="removePlayer(${index})">Supprimer</button>
+                `;
+                playerList.appendChild(li);
+            });
+        }
+
+        function removePlayer(index) {
+            players.splice(index, 1);
+            updatePlayerList();
+            updateTamalouSection();
+            updatePointsSection();
+            updateRanking();
+        }
+
+        function updateTamalouSection() {
+            const tamalouSection = document.getElementById('tamalouSection');
+            tamalouSection.innerHTML = '';
+
+            players.forEach((player, index) => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <input type="radio" name="tamalou" id="tamalou-${index}" value="${index}">
+                    <label for="tamalou-${index}">${player.name}</label>
+                `;
+                tamalouSection.appendChild(div);
+            });
+        }
+
+        function updatePointsSection() {
+            const pointsSection = document.getElementById('pointsSection');
+            pointsSection.innerHTML = '';
+
+            players.forEach((player, index) => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    ${player.name} :
+                    <input type="number" class="points-input" id="points-${index}" placeholder="Points" min="0">
+                `;
+                pointsSection.appendChild(div);
+            });
+        }
+
+        function processManche() {
+            const tamalouRadio = document.querySelector('input[name="tamalou"]:checked');
+            tamalouIndex = tamalouRadio ? parseInt(tamalouRadio.value) : -1;
+
+            let minScore = Infinity;
+
+            // 1. Saisie des points des joueurs non-Tamalou
+            players.forEach((player, index) => {
+                if (index === tamalouIndex) return;
+
+                const pointsInput = document.getElementById(`points-${index}`);
+                player.roundPoints = parseInt(pointsInput.value) || 0;
+            });
+
+            // 2. Calcul du score du Tamalou
+            if (tamalouIndex !== -1) {
+                const tamalouPointsInput = document.getElementById(`points-${tamalouIndex}`);
+                const tamalouPoints = parseInt(tamalouPointsInput.value) || 0;
+                const actualMinScore = Math.min(...players
+                    .filter((_, index) => index !== tamalouIndex)
+                    .map(player => player.roundPoints));
+
+                players[tamalouIndex].roundPoints = tamalouPoints;
+
+                // Si le score du Tamalou est supérieur au score minimum
+                if (tamalouPoints > actualMinScore) {
+                    players[tamalouIndex].roundPoints = tamalouPoints + 2 * (tamalouPoints - actualMinScore);
+                }
+            }
+
+            // 3. Mise à jour des scores
+            players.forEach(player => {
+                player.points += player.roundPoints;
+                player.roundPoints = 0;
+            });
+
+            updateRanking();
+            roundNumber++;
+            document.getElementById('roundNumber').textContent = roundNumber;
+        }
+
+        function updateRanking() {
+            const rankingList = document.getElementById('rankingList');
+            rankingList.innerHTML = '';
+
+            players.sort((a, b) => a.points - b.points).forEach((player, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ${player.name} - Classement : ${index + 1} - Points totaux : ${player.points}
+                `;
+                rankingList.appendChild(li);
+            });
+        }
+
+        function clearScores() {
+            players.forEach((_, index) => {
+                document.getElementById(`points-${index}`).value = '';
+            });
+        }
+
+        function clearRanking() {
+            players.forEach(player => {
+                player.points = 0;
+            });
+            updateRanking();
+        }
+
+        function newGame() {
+            players = [];
+            tamalouIndex = -1;
+            roundNumber = 1;
+            document.getElementById('playerList').innerHTML = '';
+            document.getElementById('tamalouSection').innerHTML = '';
+            document.getElementById('pointsSection').innerHTML = '';
+            document.getElementById('rankingList').innerHTML = '';
+            document.getElementById('roundNumber').textContent = roundNumber;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
