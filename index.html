@@ -75,21 +75,27 @@
             background-color: #fafafa;
             border-radius: 5px;
             border: 1px solid #ddd;
-        }
-
-        .player-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            box-sizing: border-box;
         }
 
-        .player-item button {
-            background-color: #f44336;
+        .remove-btn {
+            background: none;
             border: none;
+            color: #f44336;
+            cursor: pointer;
+            font-size: 18px;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
-        .player-item button:hover {
-            background-color: #d32f2f;
+        .remove-btn:hover {
+            color: #d32f2f;
         }
 
         #score-form div {
@@ -188,7 +194,8 @@
                     li.className = 'player-item';
                     li.textContent = player.name;
                     const removeBtn = document.createElement('button');
-                    removeBtn.textContent = 'Supprimer';
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.textContent = '✖';
                     removeBtn.addEventListener('click', () => {
                         players.splice(index, 1);
                         updatePlayerList();
@@ -272,7 +279,7 @@
                     .sort((a, b) => a.score - b.score)
                     .forEach((player, index) => {
                         const li = document.createElement('li');
-                        li.textContent = `${index + 1}. ${player.name} - ${player.score} points`;
+                        li.textContent = `${player.name} - Rang ${index + 1}`;
                         rankingsList.appendChild(li);
                     });
             }
