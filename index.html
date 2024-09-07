@@ -279,7 +279,7 @@
                     .sort((a, b) => a.score - b.score)
                     .forEach((player, index) => {
                         const li = document.createElement('li');
-                        li.textContent = `${player.name} - Rang ${index + 1}`;
+                        li.textContent = `${player.name} - Rang ${index + 1} - Score: ${player.score}`;
                         rankingsList.appendChild(li);
                     });
             }
